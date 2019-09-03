@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: "2019-08-29T18:33:07Z"
+  name: ingress-serviceaccount-clusterrole
+  resourceVersion: "35795"
+  selfLink: /apis/rbac.authorization.k8s.io/v1/clusterroles/ingress-serviceaccount
+  uid: 7258f5ef-ca8b-11e9-905e-42010a8c0019
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - '*'

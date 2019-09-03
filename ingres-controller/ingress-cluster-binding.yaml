@@ -1,0 +1,16 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: "2019-08-29T18:33:36Z"
+  name: ingress-serviceaccount-bind
+  resourceVersion: "33804"
+  selfLink: /apis/rbac.authorization.k8s.io/v1/clusterrolebindings/ingress-serviceaccount-bind
+  uid: 8318d814-ca8b-11e9-905e-42010a8c0019
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ingress-serviceaccount-clusterrole
+subjects:
+- kind: ServiceAccount
+  name: ingress-serviceaccount
+  namespace: ingress-space

@@ -1,0 +1,23 @@
+- name: Compute Engine Instance Examples
+  hosts: localhost
+  tasks:
+    - name: create multiple instances
+      # Basic provisioning example.  Create multiple Debian 8 instances in the
+      yum:
+        instance_names: test1
+        zone: asia-east1-a
+        machine_type: n1-standard-1
+        image: debian-8
+        state: present
+        service_account_email: "{{ service_account_email }}"
+        credentials_file: "{{ credentials_file }}"
+        project_id: "{{ project_id }}"
+        metadata : '{ "startup-script" : "apt-get update" }'
+      register: gce
+
+    - name: installing gcloud
+      add_host:
+        hostname: "{{ item.public_ip }}"
+        groupname: gce_instances_ips
+      with_items: "{{ gce.instance_data }}"
+

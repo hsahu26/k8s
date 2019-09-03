@@ -1,0 +1,143 @@
+1. sing up on google cloud, create project & service account and download credential file (json file)
+
+2. Make a note for project id, we need to enter project id and credential file path in ansible playbook
+
+3. clone repo on any linux system where ansible installed (v2.4) - git clone 
+ 
+- git clone https://github.com/hsahu26/k8s.git
+
+3. change follwoing variable and path in provision_gce.yml file
+
+- ssh keys are placed in ssh_keys folder.
+-------------------------------------------------------------
+    service_account_email: <your service account emqil address>
+    credentials_file: <your json credential file>
+    project_id: <your project id>
+---------------------------------------------------------
+5. ansible-playbook -i inventory.ini provision_gce.yml
+
+6. Make a note for ip addresses from output of above playbook and replace them in kadm-ansible/hosts.ini for respective mastet and node
+
+7. check password less authentication for newly created instances, it should be there 
+
+- ssh -i ssh_keys/gcloud_rsa  admin@<ip> uptime
+
+8. ansible-playbook -i  kadm-ansible/hosts.ini  kadm-ansible/site.yaml --private-key=ssh_keys/gcloud_rsa -u admin
+
+- Now take ssh of master server and run below commands 
+-- ssh -i ssh_keys/gcloud_rsa  admin@<ip>
+
+--------------------------
+Configure Nginx Controller
+-------------------------
+- cd ingres-controller/ 
+- kubectl create namespace ingress-space
+- kubectl create configmap nginx-configuration --namespace ingress-space
+- kubectl create serviceaccount ingress-serviceaccount --namespace ingress-space
+- kubectl create -f ingress-cluster-role.yaml
+- kubectl create -f ingress-cluster-binding.yaml
+- kubectl create -f default-backend-dc-sg.yaml
+- kubectl create -f default-backend-svc-sg.yaml
+- kubectl create -f ingress-controller-answer-file.yaml
+- kubectl create -f ingress-service.yaml
+
+------
+GCE HTTP Load balacer with backend 
+-------
+Create unmanged instace group and add all nodes in to it.
+- Go to the Instance Groups page in the GCP Console.
+- GO TO THE INSTANCE GROUPS PAGE
+- Click Create an instance group.
+- Enter a name for the unmanaged instance group.
+- Under Location, select Single-zone
+- Under Zone, select the zone where you want to locate the group.
+- Under Group type, select Unmanaged instance group.
+- Select the network for this group.
+- Under VM instances, select the all node instances to add to this group.
+- Click Create to create the new group.
+Create Load Balancer
+- Go to Network Services >> Load Balancing and Click Create Load Balancer
+
+- In the HTTP(S) Load Balancing click Start Configuration
+Backend configuration
+- Enter a name for your Load Balancer and click Backend configuration
+
+- In Backend services & backend buckets select Backend service >> Create backend service
+
+- Enter a name for your backend service
+
+- In Backend Type choose Instance group
+
+- In Backends select the Instance group you created
+
+- In Port numbers enter 30080
+
+- In Balance mode choose Utilization
+- Click Done
+Create Health Check
+- In Health Check click create health check
+
+- In Name enter a health check name
+
+- In Protocol select TCP
+
+- In Port enter 30080
+
+- Click Save and Continue
+
+Frontend Configuration
+- Enter a name for your IPv4 frontend configuration
+
+- In Protocol select HTTP
+
+- In IP version select IPv4
+
+- In IP address select the Ephemeral 
+- in PORT enter 80
+
+To check wheater loadbalancer is contacting to nginx controller or not, enter loadbancers ip on browser, you should get 404 page not found page.
+- Make below entry in  hosts file on your machine
+--------------------------------------
+<Loadbalancer-ip>  	staging-guestbook.mstakx.io
+<Loadbalancer-ip>	guestbook.mstakx.io
+
+----
+deploying guestbook app in production and staging environment
+--
+- cd guestbook
+- kubectl create namespace production
+- kubectl create namespace staging
+- kubectl -n production create -f guestbook-all-in-one.yaml
+- kubectl -n staging create -f guestbook-all-in-one.yaml
+
+
+exposing ingress resource to access application from external 
+- kubectl create -f ingres-controller/ingress-resource-prod-guestbook.mstakx.io.yaml
+- kubectl create -f ingres-controller/ingress-resource-staging-guestbook.mstakx.io.yaml
+
+
+-----
+Autoscalar & Metrics
+---
+Autoscalar needs metrics to make decision, so it should work before we use autoscalar
+
+1. configuring metrics 
+
+- cd metrics-server
+- kubectl create -f deploy1.8+/
+- Run below commands to check whether metrics working fine or not
+---------------------------
+- kubectl top node
+- kubectl top pod --all-namespaces
+---------------------------
+
+
+2. Go into  /etc/kubernetes/manifests/kube-controller-manager.yaml and make below parameter true
+-----------------------------------------------------
+--horizontal-pod-autoscaler-use-rest-clients=true
+-----------------------------------------------------
+3. Create autoscalar  
+
+- kubectl autoscale deployment frontend  --cpu-percent=50 --min=1  -max=2 -n staging
+- kubectl autoscale deployment frontend  --cpu-percent=50 --min=1 --max=3 -n production
+- kubectl -n staging,production get hpa

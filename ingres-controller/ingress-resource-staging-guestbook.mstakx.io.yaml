@@ -1,0 +1,32 @@
+apiVersion: v1
+items:
+- apiVersion: extensions/v1beta1
+  kind: Ingress
+  metadata:
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    creationTimestamp: "2019-08-29T19:53:16Z"
+    generation: 3
+    name: ingress-staging-guestbook.mstakx.io
+    namespace: staging
+    resourceVersion: "233973"
+    selfLink: /apis/extensions/v1beta1/namespaces/staging/ingresses/ingress-wear-watch
+    uid: a4916665-ca96-11e9-905e-42010a8c0019
+  spec:
+    rules:
+    - host: staging-guestbook.mstakx.io
+      http:
+        paths:
+        - backend:
+            serviceName: frontend
+            servicePort: 80
+          path: /
+  status:
+    loadBalancer:
+      ingress:
+      - {}
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""

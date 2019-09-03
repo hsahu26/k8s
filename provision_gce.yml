@@ -1,0 +1,80 @@
+- name: Compute Engine Instance Examples
+  hosts: localhost
+  vars:
+    service_account_email: "ansible@kube-cluster-241.iam.gserviceaccount.com"
+    credentials_file: "/home/admin/files/kubernate-cluster-Auth.json"
+    project_id: "kube-cluster-249"
+  tasks:
+    - name: create multiple instances
+      # Basic provisioning example.  Create multiple Debian 8 instances in the
+      # us-central1-a Zone of n1-standard-1 machine type.
+      gce:
+        instance_names: kmaster01,knode01
+        zone: asia-east1-a
+        machine_type: n1-standard-1
+        image: centos-7
+        state: present
+        service_account_email: "{{ service_account_email }}"
+        credentials_file: "{{ credentials_file }}"
+        project_id: "{{ project_id }}"
+        #metadata : '{ "startup-script" : "yum update -y" }'
+        metadata : '{"USER":"admin","sshKeys":"admin:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDBBcepL/fjurAG3aJAXE5qhfY7WGX5aL0vUYQYKFv79nKRc51E3MrGSliUxa5BfmIwTj77cYqGnPi+/cwxprqdQ9iT/RW+lf7WPpm14sy1lwl1IowQKLP6eE0nJNsMrrRueFNGZozfw5m4JpFvBOJgQsKe1UX5u+bj6SOJ84mFwp6AVOaqSYvwe0dDwdltjNknE8dEaC2IddapUIXVh1sESE9s2S8VELrFi/5Hqx5D6rv4oxSneHL/uoTKFwL6MmYkZNU9LEaA4Q73MKpA/WHTpnJyoO+eG8O4srfcj5qag8Zvjd7A3ulZwoKetYlyK3f3aEC1sLQM8It7t2QCz59X","startup-script" : "yum update -y"}'
+      register: gce
+
+    - name: Save host data
+      add_host:
+        hostname: "{{ item.public_ip }}"
+        groupname: gce_instances_ips
+      with_items: "{{ gce.instance_data }}"
+
+    - name: Wait for SSH for instances
+      wait_for:
+        delay: 1
+        host: "{{ item.public_ip }}"
+        port: 22
+        state: started
+        timeout: 30
+      with_items: "{{ gce.instance_data }}"
+    
+#- name: Setup devops user with sudo and ssh authentication
+#  hosts: gce_instances_ips
+#  become: yes
+#  become_method: sudo
+#  remote_user: admin
+#  vars:
+#    devops_password: '$6$Q.hx030j$4SoRPi11LtYjB0cQXqDupwq18ueyneB1aeiWwur65QpAqvOkiMVDbe2nUiUqiEZkGYtgKGuEjno4LkA.yyxbB.'
+#    ansible_ssh_private_key_file: "/root/gce/k8s/ssh_keys/gcloud_rsa"
+#  tasks:
+#    - name: Add a new user named devops
+#      user:
+#        name: devops
+#        shell: /bin/bash
+#        password: "{{ devops_password }}"
+#    - name: Add devops user to the sudoers
+#      copy:
+#        dest: "/etc/sudoers.d/devops"
+#        content: "devops  ALL=(ALL)  NOPASSWD: ALL"
+#    - name: Deploy SSH Key
+#      authorized_key: user=devops key="{{ lookup('file', '/root/gce/k8s/ssh_keys/gcloud_rsa.pub') }}" state=present
+
+  #  - name: Configure Hosts
+  #    hosts: gce_instances_ips
+  #    become: yes
+  #    become_method: sudo
+  #    roles:
+  #      - my-role-one
+  #      - my-role-two
+  #    tags:
+  #      - config
+
+  #  - name: delete test-instances
+  #    # Basic termination of instance.
+  #    gce:
+  #      service_account_email: "{{ service_account_email }}"
+  #      credentials_file: "{{ credentials_file }}"
+  #      project_id: "{{ project_id }}"
+  #      instance_names: "{{ gce.instance_names }}"
+  #      zone: asia-east1-a
+  #      state: absent
+  #    tags:
+  #      - delete
